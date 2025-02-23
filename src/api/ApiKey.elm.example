@@ -1,0 +1,6 @@
+module Api.ApiKey exposing (..)
+
+
+apiKey : String
+apiKey =
+    "CHANGEME"
