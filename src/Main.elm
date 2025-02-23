@@ -1,11 +1,11 @@
 module Main exposing (..)
 
-import Api.ApiKey exposing (apiKey)
-import Api.Random exposing (ApiResponse, apiResponseDecoder)
+import Api.Random as Api
 import Browser
 import Html exposing (Html, button, div, text)
 import Html.Events exposing (onClick)
 import Http
+import Json.Encode as E
 
 
 type alias Model =
@@ -16,7 +16,7 @@ type alias Model =
 
 type Msg
     = FetchRandomNumbers
-    | RandomNumbersFetched (Result Http.Error ApiResponse)
+    | RandomNumbersFetched (Result Http.Error Api.ApiResponse)
 
 
 init : Model
@@ -73,27 +73,12 @@ fetchRandomNumbers =
             "https://api.random.org/json-rpc/2/invoke"
 
         payload =
-            String.join ""
-                [ """
-            {
-                "jsonrpc": "2.0",
-                "method": "generateIntegers",
-                "params": {
-            """
-                , "\"apiKey\": \"" ++ apiKey ++ "\",\n"
-                , """
-                    "n": 6,
-                    "min": 1,
-                    "max": 6,
-                    "replacement": true
-                },
-                "id": 42
-            }
-            """
-                ]
+            Api.rpcGenerateIntegers 5 1 6
+                |> Api.rpcCallEncoder
+                |> E.encode 0
     in
     Http.post
         { url = url
         , body = Http.stringBody "application/json" payload
-        , expect = Http.expectJson RandomNumbersFetched apiResponseDecoder
+        , expect = Http.expectJson RandomNumbersFetched Api.apiResponseDecoder
         }

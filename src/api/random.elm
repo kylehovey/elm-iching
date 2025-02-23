@@ -1,21 +1,23 @@
 module Api.Random exposing (..)
 
-import Json.Decode exposing (Decoder, field, int, list, string)
+import Api.ApiKey exposing (apiKey)
+import Json.Decode as D
+import Json.Encode as E
 
 
 type alias ApiResponse =
     { jsonrpc : String
     , result : RandomData
-    , id : Int
+    , id : String
     }
 
 
-apiResponseDecoder : Decoder ApiResponse
+apiResponseDecoder : D.Decoder ApiResponse
 apiResponseDecoder =
-    Json.Decode.map3 ApiResponse
-        (field "jsonrpc" string)
-        (field "result" randomDataDecoder)
-        (field "id" int)
+    D.map3 ApiResponse
+        (D.field "jsonrpc" D.string)
+        (D.field "result" randomDataDecoder)
+        (D.field "id" D.string)
 
 
 type alias RandomData =
@@ -25,12 +27,12 @@ type alias RandomData =
     }
 
 
-randomDataDecoder : Decoder RandomData
+randomDataDecoder : D.Decoder RandomData
 randomDataDecoder =
-    Json.Decode.map3 RandomData
-        (field "random" randomIntsDecoder)
-        (field "bitsUsed" int)
-        (field "bitsLeft" int)
+    D.map3 RandomData
+        (D.field "random" randomIntsDecoder)
+        (D.field "bitsUsed" D.int)
+        (D.field "bitsLeft" D.int)
 
 
 type alias RandomInts =
@@ -39,8 +41,72 @@ type alias RandomInts =
     }
 
 
-randomIntsDecoder : Decoder RandomInts
+randomIntsDecoder : D.Decoder RandomInts
 randomIntsDecoder =
-    Json.Decode.map2 RandomInts
-        (field "data" (list int))
-        (field "completionTime" string)
+    D.map2 RandomInts
+        (D.field "data" (D.list D.int))
+        (D.field "completionTime" D.string)
+
+
+type alias GenerateIntegersParams =
+    { n : Int
+    , min : Int
+    , max : Int
+    , replacement : Bool
+    , apiKey : String
+    }
+
+
+type Params
+    = GenerateIntegers GenerateIntegersParams
+
+
+paramsEncoder : Params -> E.Value
+paramsEncoder (GenerateIntegers { n, min, max, replacement, apiKey }) =
+    E.object
+        [ ( "apiKey", E.string apiKey )
+        , ( "n", E.int n )
+        , ( "min", E.int min )
+        , ( "max", E.int max )
+        , ( "replacement", E.bool replacement )
+        ]
+
+
+type alias RpcCall =
+    { id : String
+    , method : String
+    , params : Params
+    }
+
+
+rpcCallEncoder : RpcCall -> E.Value
+rpcCallEncoder { id, method, params } =
+    E.object
+        [ ( "jsonrpc", E.string "2.0" )
+        , ( "id", E.string id )
+        , ( "method", E.string method )
+        , ( "params", paramsEncoder params )
+        ]
+
+
+
+-- API Section
+
+
+generateIntegersParams : Int -> Int -> Int -> Params
+generateIntegersParams n min max =
+    GenerateIntegers
+        { n = n
+        , min = min
+        , max = max
+        , apiKey = apiKey
+        , replacement = False
+        }
+
+
+rpcGenerateIntegers : Int -> Int -> Int -> RpcCall
+rpcGenerateIntegers n min max =
+    { id = "42"
+    , method = "generateIntegers"
+    , params = generateIntegersParams n min max
+    }
