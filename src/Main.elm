@@ -19,21 +19,29 @@ type Msg
     | RandomNumbersFetched (Result Http.Error Api.ApiResponse)
 
 
+fetchRandomNumbers : Cmd Msg
+fetchRandomNumbers =
+    let
+        url =
+            "https://api.random.org/json-rpc/2/invoke"
+
+        payload =
+            Api.rpcGenerateIntegers 5 1 6
+                |> Api.rpcCallEncoder
+                |> E.encode 0
+    in
+    Http.post
+        { url = url
+        , body = Http.stringBody "application/json" payload
+        , expect = Http.expectJson RandomNumbersFetched Api.apiResponseDecoder
+        }
+
+
 init : Model
 init =
     { randomNumbers = []
     , errorMessage = ""
     }
-
-
-main : Program {} Model Msg
-main =
-    Browser.element
-        { init = \_ -> ( init, Cmd.none )
-        , update = update
-        , view = view
-        , subscriptions = \_ -> Sub.none
-        }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -66,19 +74,11 @@ view model =
         ]
 
 
-fetchRandomNumbers : Cmd Msg
-fetchRandomNumbers =
-    let
-        url =
-            "https://api.random.org/json-rpc/2/invoke"
-
-        payload =
-            Api.rpcGenerateIntegers 5 1 6
-                |> Api.rpcCallEncoder
-                |> E.encode 0
-    in
-    Http.post
-        { url = url
-        , body = Http.stringBody "application/json" payload
-        , expect = Http.expectJson RandomNumbersFetched Api.apiResponseDecoder
+main : Program {} Model Msg
+main =
+    Browser.element
+        { init = \_ -> ( init, Cmd.none )
+        , update = update
+        , view = view
+        , subscriptions = \_ -> Sub.none
         }
