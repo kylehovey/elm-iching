@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Api.ApiKey exposing (apiKey)
 import Api.Random exposing (ApiResponse, apiResponseDecoder)
 import Browser
 import Html exposing (Html, button, div, text)
@@ -72,12 +73,15 @@ fetchRandomNumbers =
             "https://api.random.org/json-rpc/2/invoke"
 
         payload =
-            """
+            String.join ""
+                [ """
             {
                 "jsonrpc": "2.0",
                 "method": "generateIntegers",
                 "params": {
-                    "apiKey": "CHANGEME",
+            """
+                , "\"apiKey\": \"" ++ apiKey ++ "\",\n"
+                , """
                     "n": 6,
                     "min": 1,
                     "max": 6,
@@ -86,6 +90,7 @@ fetchRandomNumbers =
                 "id": 42
             }
             """
+                ]
     in
     Http.post
         { url = url
