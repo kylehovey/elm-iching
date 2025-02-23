@@ -1,12 +1,14 @@
 module Api.Random exposing (..)
 
-import Json.Decode exposing (Decoder, field, list, int, string)
+import Json.Decode exposing (Decoder, field, int, list, string)
+
 
 type alias ApiResponse =
-    { jsonrpc: String
+    { jsonrpc : String
     , result : RandomData
     , id : Int
     }
+
 
 apiResponseDecoder : Decoder ApiResponse
 apiResponseDecoder =
@@ -15,11 +17,13 @@ apiResponseDecoder =
         (field "result" randomDataDecoder)
         (field "id" int)
 
+
 type alias RandomData =
     { random : RandomInts
     , bitsUsed : Int
     , bitsLeft : Int
     }
+
 
 randomDataDecoder : Decoder RandomData
 randomDataDecoder =
@@ -28,13 +32,15 @@ randomDataDecoder =
         (field "bitsUsed" int)
         (field "bitsLeft" int)
 
+
 type alias RandomInts =
     { data : List Int
     , completionTime : String
     }
 
+
 randomIntsDecoder : Decoder RandomInts
 randomIntsDecoder =
     Json.Decode.map2 RandomInts
-      (field "data" (list int))
-      (field "completionTime" string)
+        (field "data" (list int))
+        (field "completionTime" string)

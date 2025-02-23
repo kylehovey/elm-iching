@@ -1,37 +1,94 @@
-module Main exposing (main)
+module Main exposing (..)
 
+import Api.Random exposing (ApiResponse, apiResponseDecoder)
 import Browser
 import Html exposing (Html, button, div, text)
 import Html.Events exposing (onClick)
+import Http
 
--- MAIN
-main : Program () Model Msg
-main =
-  Browser.sandbox { init = init, update = update, view = view }
 
--- MODEL
-type alias Model = Int
+type alias Model =
+    { randomNumbers : List Int
+    , errorMessage : String
+    }
+
+
+type Msg
+    = FetchRandomNumbers
+    | RandomNumbersFetched (Result Http.Error ApiResponse)
+
 
 init : Model
 init =
-  0
+    { randomNumbers = []
+    , errorMessage = ""
+    }
 
--- UPDATE
-type Msg = Increment | Decrement
 
-update : Msg -> Model -> Model
+main : Program {} Model Msg
+main =
+    Browser.element
+        { init = \_ -> ( init, Cmd.none )
+        , update = update
+        , view = view
+        , subscriptions = \_ -> Sub.none
+        }
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-  case msg of
-    Increment ->
-      model + 1
-    Decrement ->
-      model - 1
+    case msg of
+        FetchRandomNumbers ->
+            ( model, fetchRandomNumbers )
 
--- VIEW
+        RandomNumbersFetched result ->
+            case result of
+                Ok apiResponse ->
+                    ( { model | randomNumbers = apiResponse.result.random.data, errorMessage = "" }, Cmd.none )
+
+                Err _ ->
+                    ( { model | randomNumbers = [], errorMessage = "Failed to fetch random numbers." }, Cmd.none )
+
+
 view : Model -> Html Msg
 view model =
-  div []
-    [ button [ onClick Decrement ] [ text "-" ]
-    , div [] [ text (String.fromInt model) ]
-    , button [ onClick Increment ] [ text "+" ]
-    ]
+    div []
+        [ button [ onClick FetchRandomNumbers ] [ text "Get Random Numbers" ]
+        , div []
+            [ case model.randomNumbers of
+                [] ->
+                    text model.errorMessage
+
+                numbers ->
+                    div [] [ text (String.join ", " (List.map String.fromInt numbers)) ]
+            ]
+        ]
+
+
+fetchRandomNumbers : Cmd Msg
+fetchRandomNumbers =
+    let
+        url =
+            "https://api.random.org/json-rpc/2/invoke"
+
+        payload =
+            """
+            {
+                "jsonrpc": "2.0",
+                "method": "generateIntegers",
+                "params": {
+                    "apiKey": "CHANGEME",
+                    "n": 6,
+                    "min": 1,
+                    "max": 6,
+                    "replacement": true
+                },
+                "id": 42
+            }
+            """
+    in
+    Http.post
+        { url = url
+        , body = Http.stringBody "application/json" payload
+        , expect = Http.expectJson RandomNumbersFetched apiResponseDecoder
+        }
